@@ -44,6 +44,20 @@ def do_math(data):
 	sphere_param(P)
 	
 	return None
+	
+def noise_filter(P):
+	fil_out = .02
+	fil_gain = 0.005
+	
+	#Values derived through trial and error
+	P.xc = fil_gain * P.xc + (1 - fil_gain) * -0.011
+	P.yc = fil_gain * P.yc + (1 - fil_gain) * -0.019	
+	P.zc = fil_gain * P.zc + (1 - fil_gain) * 0.47
+	
+	
+	P.radius = 0.004 * P.radius + (1 - 0.005) * 0.05
+		
+	return P
 
 if __name__ == '__main__':
 	# initialize the node
@@ -66,6 +80,11 @@ if __name__ == '__main__':
 		if start:	
 			#Call function with data gotten from xyz_coord
 			P = do_math(xyz_array)
+			
+			#Filter Noise
+			sphere_param_msg = noise_filter(sphere_param_msg)
+			
+			
 			#Publish data
 			pos_pub.publish(sphere_param_msg)
 			
