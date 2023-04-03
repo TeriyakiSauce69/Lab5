@@ -45,17 +45,20 @@ def do_math(data):
 	
 	return None
 	
-def noise_filter(P):
-	fil_out = .02
-	fil_gain = 0.005
+def noise_filter(P, Prev = None):
+	if Prev == None:
+		return P
+	
+	fil_gain = 1
+	r_gain = 0.02
 	
 	#Values derived through trial and error
-	P.xc = fil_gain * P.xc + (1 - fil_gain) * -0.011
-	P.yc = fil_gain * P.yc + (1 - fil_gain) * -0.019	
-	P.zc = fil_gain * P.zc + (1 - fil_gain) * 0.47
+	P.xc = fil_gain * P.xc + (1 - fil_gain) * Prev.xc
+	P.yc = fil_gain * P.yc + (1 - fil_gain) * Prev.yc	
+	P.zc = fil_gain * P.zc + (1 - fil_gain) * Prev.zc
 	
 	
-	P.radius = 0.004 * P.radius + (1 - 0.005) * 0.05
+	P.radius = r_gain * P.radius + (1 - r_gain) * Prev.radius
 		
 	return P
 
@@ -74,19 +77,33 @@ if __name__ == '__main__':
 	# set a 10Hz frequency for this loop
 	loop_rate = rospy.Rate(10)
 	
+	
+	first_pass = True
+	
 	while not rospy.is_shutdown():
-
 	#We get data we start 
 		if start:	
 			#Call function with data gotten from xyz_coord
 			P = do_math(xyz_array)
 			
-			#Filter Noise
-			sphere_param_msg = noise_filter(sphere_param_msg)
-			
+		
+			if first_pass != True:
+				filt_sphere_param_msg = noise_filter(sphere_param_msg, filt_sphere_param_msg)
+				pos_pub.publish(filt_sphere_param_msg)
+				
+			if first_pass:
+				#Filter Noise
+				filt_sphere_param_msg = noise_filter(sphere_param_msg)
+				
+				first_pass = False
+				print("This should only be hit once!")
+				
+		
+			#Publish data
+			#pos_pub.publish(sphere_param_msg)
 			
 			#Publish data
-			pos_pub.publish(sphere_param_msg)
+			
 			
 		loop_rate.sleep()
 		
